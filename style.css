@@ -1,0 +1,125 @@
+/* --- WATERLEVEL Responsive UI --- */
+:root {
+    --primary: #0056b3;
+    --secondary: #66deff;
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --text-main: #2d3436;
+    --text-sub: #636e72;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: var(--bg);
+    color: var(--text-main);
+    margin: 0;
+    padding: 10px; /* ลด Padding สำหรับมือถือ */
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* Header */
+.main-header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column; /* มือถือ: ชื่ออยู่บน สถานะอยู่ล่าง */
+    gap: 10px;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+    .main-header {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 20px 30px;
+    }
+}
+
+.status-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+/* Grid Layout */
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* มือถือ: 1 คอลัมน์ */
+    gap: 15px;
+}
+
+@media (min-width: 992px) {
+    .grid-layout {
+        grid-template-columns: 350px 1fr; /* คอมพิวเตอร์: 2 คอลัมน์ */
+        gap: 25px;
+    }
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--bg);
+    padding-bottom: 10px;
+}
+
+/* Value Display */
+.current-num {
+    font-size: 4rem; /* ปรับขนาดเล็กลงนิดหน่อยให้พอดีหน้าจอมือถือ */
+    font-weight: 800;
+    color: var(--primary);
+    text-align: center;
+    line-height: 1;
+}
+
+.unit-label {
+    text-align: center;
+    color: var(--text-sub);
+    font-size: 1rem;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 300px; /* ล็อคความสูงคงที่สำหรับทุกหน้าจอ */
+    width: 100%;
+}
+
+/* Responsive Table */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* เลื่อนซ้ายขวาได้ในมือถือ */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 500px; /* ป้องกันตารางบีบจนอ่านไม่ออก */
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+th { background-color: var(--bg); color: var(--primary); }
