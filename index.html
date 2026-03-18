@@ -3,70 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WATERLEVEL Dashboard - Pagination</title>
+    <title>WATERLEVEL Dashboard - Mobile Friendly</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --danger: #ff4757; --success: #2ed573; }
+        /* --- CSS ปรับปรุงเพื่อมือถือ --- */
+        :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --success: #2ed573; --danger: #ff4757; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--bg); margin: 0; padding: 10px; }
+
         .dashboard-container { max-width: 1200px; margin: auto; }
 
-        /* Header & Status */
+        /* Header */
         .main-header { 
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white; padding: 20px; border-radius: 15px;
-            display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 20px;
+            color: white; padding: 15px; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .status-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .status-badge { 
-            padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; 
-            background: rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .status-badge { background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .dot-red { background-color: var(--danger); }
         .dot-green { background-color: var(--success); }
 
+        /* Grid Layout */
         .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
+
+        /* Tablet & Desktop Layout */
         @media (min-width: 992px) { 
             .grid-layout { grid-template-columns: 350px 1fr; gap: 20px; } 
-            .main-header { flex-direction: row; justify-content: space-between; padding: 20px 40px; }
+            .main-header { flex-direction: row; justify-content: space-between; padding: 15px 30px; }
+            body { padding: 20px; }
         }
 
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .card-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
-        .current-num { font-size: 4.5rem; font-weight: 800; text-align: center; color: var(--primary); margin: 10px 0; }
-        .unit-label { text-align: center; color: #636e72; font-size: 1.2rem; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        /* Card Styles */
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .card-title { font-size: 1rem; font-weight: 600; color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+
+        /* Current Value (Responsive Font) */
+        .current-num { font-size: clamp(3.5rem, 15vw, 5rem); font-weight: 800; text-align: center; color: var(--primary); margin: 5px 0; line-height: 1; }
+        .unit-label { text-align: center; color: #636e72; font-size: 1rem; }
+        
+        /* Chart Container */
+        .chart-container { position: relative; height: 280px; width: 100%; }
 
         /* Table & Pagination */
-        .table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; min-width: 450px; }
-        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; font-size: 0.9rem; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f1f3f5; color: var(--primary); }
-        
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-        .btn-page { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-        .btn-page:disabled { background: #ccc; cursor: not-allowed; }
-        .page-info { font-weight: 500; color: var(--primary); }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
+        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-page:disabled { background: #ccc; }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
     <header class="main-header">
-        <h1 style="margin:0;">WATERLEVEL MONITOR</h1>
+        <h2 style="margin:0; font-size: 1.4rem;">WATERLEVEL MONITOR</h2>
         <div class="status-group">
-            <div class="status-badge">
-                <span id="mqtt-dot" class="dot dot-red"></span>
-                MQTT: <span id="mqtt-text">ไม่เชื่อมต่อ</span>
-            </div>
-            <div class="status-badge">
-                <span id="device-dot" class="dot dot-red"></span>
-                อุปกรณ์: <span id="device-text">ออฟไลน์</span>
-            </div>
+            <div class="status-badge"><span id="mqtt-dot" class="dot dot-red"></span> MQTT: <span id="mqtt-text">OFF</span></div>
+            <div class="status-badge"><span id="device-dot" class="dot dot-red"></span> DEVICE: <span id="device-text">OFF</span></div>
         </div>
     </header>
 
@@ -75,7 +76,7 @@
             <div class="card-title">💧 ระดับน้ำปัจจุบัน</div>
             <div class="current-num" id="val-display">0.00</div>
             <div class="unit-label">เมตร (m)</div>
-            <div id="time-display" style="text-align:center; color:#999; font-size:0.8rem; margin-top:15px;">รอรับข้อมูล...</div>
+            <div id="time-display" style="text-align:center; color:#999; font-size:0.7rem; margin-top:10px;">รอรับข้อมูล...</div>
         </div>
 
         <div class="card">
@@ -86,16 +87,16 @@
         </div>
 
         <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">📋 บันทึกข้อมูลล่าสุด (15 รายการ/หน้า)</div>
+            <div class="card-title">📋 บันทึกข้อมูล (15 รายการ/หน้า)</div>
             <div class="table-responsive">
                 <table>
-                    <thead><tr><th>ลำดับ</th><th>วัน/เวลา</th><th>ระดับน้ำ (m)</th></tr></thead>
+                    <thead><tr><th>#</th><th>วัน/เวลา</th><th>ระดับน้ำ (m)</th></tr></thead>
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
             <div class="pagination">
                 <button id="prevPage" class="btn-page" onclick="changePage(-1)">ก่อนหน้า</button>
-                <span class="page-info">หน้า <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
+                <span style="font-size: 0.8rem;">หน้า <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
                 <button id="nextPage" class="btn-page" onclick="changePage(1)">ถัดไป</button>
             </div>
         </div>
@@ -103,6 +104,7 @@
 </div>
 
 <script>
+    // --- ตั้งค่า MQTT ---
     const HOST = "ddf77777.ala.asia-southeast1.emqxsl.com";
     const PORT = 8084;
     const TOPIC = "water/001/data";
@@ -116,7 +118,7 @@
 
     const client = new Paho.MQTT.Client(HOST, PORT, "web_ui_" + Math.random().toString(16).substr(2, 5));
 
-    // --- กราฟ Chart.js ---
+    // --- Chart.js Config ---
     const ctx = document.getElementById('waterChart').getContext('2d');
     const waterChart = new Chart(ctx, {
         type: 'line',
@@ -124,40 +126,27 @@
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, suggestedMax: 5 } } }
     });
 
-    // --- ระบบเช็คสถานะอุปกรณ์ ---
     function checkDeviceStatus() {
         if (!lastMessageTime) return;
-        const now = new Date();
-        const diffInMinutes = (now - lastMessageTime) / 1000 / 60;
-        if (diffInMinutes >= 15) {
-            document.getElementById('device-dot').className = "dot dot-red";
-            document.getElementById('device-text').innerText = "อุปกรณ์ออฟไลน์";
-        } else {
-            document.getElementById('device-dot').className = "dot dot-green";
-            document.getElementById('device-text').innerText = "อุปกรณ์ออนไลน์";
-        }
+        const diffInMinutes = (new Date() - lastMessageTime) / 60000;
+        const isOnline = diffInMinutes < 15;
+        document.getElementById('device-dot').className = isOnline ? "dot dot-green" : "dot dot-red";
+        document.getElementById('device-text').innerText = isOnline ? "ออนไลน์" : "ออฟไลน์";
     }
     setInterval(checkDeviceStatus, 10000);
 
-    // --- การจัดการตารางและการแบ่งหน้า ---
     function renderTable() {
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
-
-        // เรียงข้อมูลใหม่ล่าสุดขึ้นก่อน
         const displayData = [...fullHistory].reverse();
         const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const paginatedItems = displayData.slice(start, end);
+        const paginatedItems = displayData.slice(start, start + rowsPerPage);
 
         paginatedItems.forEach((item, index) => {
             const row = tbody.insertRow();
-            // คำนวณลำดับที่แท้จริง
-            const displayId = displayData.length - (start + index);
-            row.innerHTML = `<td>${displayId}</td><td>${item.fullTime}</td><td><b style="color:#0056b3">${item.val.toFixed(2)} m</b></td>`;
+            row.innerHTML = `<td>${displayData.length - (start + index)}</td><td>${item.fullTime}</td><td><b style="color:#0056b3">${item.val.toFixed(2)} m</b></td>`;
         });
 
-        // อัปเดตตัวเลขหน้า
         const totalPages = Math.ceil(fullHistory.length / rowsPerPage) || 1;
         document.getElementById('currentPage').innerText = currentPage;
         document.getElementById('totalPages').innerText = totalPages;
@@ -165,66 +154,47 @@
         document.getElementById('nextPage').disabled = currentPage === totalPages;
     }
 
-    function changePage(direction) {
-        currentPage += direction;
-        renderTable();
-    }
-
-    function loadInitialData() {
-        fullHistory.slice(-15).forEach(item => {
-            waterChart.data.labels.push(item.time);
-            waterChart.data.datasets[0].data.push(item.val);
-        });
-        waterChart.update();
-        if(fullHistory.length > 0) document.getElementById('val-display').innerText = fullHistory[fullHistory.length-1].val.toFixed(2);
-        renderTable();
-    }
+    function changePage(dir) { currentPage += dir; renderTable(); }
 
     client.onMessageArrived = function(message) {
         const val = parseFloat(message.payloadString.replace(/[^\d.-]/g, ''));
-        const nowTime = new Date().toLocaleTimeString('th-TH');
-        const fullTime = new Date().toLocaleString('th-TH');
+        if (isNaN(val)) return;
 
-        if (!isNaN(val)) {
-            lastMessageTime = new Date();
-            checkDeviceStatus();
+        const now = new Date();
+        const nowStr = now.toLocaleTimeString('th-TH');
+        lastMessageTime = now;
+        checkDeviceStatus();
 
-            document.getElementById('val-display').innerText = val.toFixed(2);
-            document.getElementById('time-display').innerText = "อัปเดตล่าสุด: " + fullTime;
+        document.getElementById('val-display').innerText = val.toFixed(2);
+        document.getElementById('time-display').innerText = "อัปเดตล่าสุด: " + now.toLocaleString('th-TH');
 
-            // เก็บข้อมูล (จำกัด 100 ค่าล่าสุดใน Memory เพื่อไม่ให้เบราว์เซอร์อืด)
-            fullHistory.push({ time: nowTime, fullTime: fullTime, val: val });
-            if (fullHistory.length > 100) fullHistory.shift();
-            localStorage.setItem('water_history', JSON.stringify(fullHistory));
+        fullHistory.push({ time: nowStr, fullTime: now.toLocaleString('th-TH'), val: val });
+        if (fullHistory.length > 100) fullHistory.shift();
+        localStorage.setItem('water_history', JSON.stringify(fullHistory));
 
-            // กราฟ (แสดง 15 ค่าล่าสุด)
-            if (waterChart.data.labels.length > 15) {
-                waterChart.data.labels.shift();
-                waterChart.data.datasets[0].data.shift();
-            }
-            waterChart.data.labels.push(nowTime);
-            waterChart.data.datasets[0].data.push(val);
-            waterChart.update();
-
-            renderTable();
+        if (waterChart.data.labels.length > 15) {
+            waterChart.data.labels.shift();
+            waterChart.data.datasets[0].data.shift();
         }
-    };
-
-    function onConnect() {
-        document.getElementById('mqtt-dot').className = "dot dot-green";
-        document.getElementById('mqtt-text').innerText = "เชื่อมต่อแล้ว";
-        client.subscribe(TOPIC);
-        loadInitialData();
-    }
-
-    client.onConnectionLost = () => {
-        document.getElementById('mqtt-dot').className = "dot dot-red";
-        document.getElementById('mqtt-text').innerText = "ไม่เชื่อมต่อ";
+        waterChart.data.labels.push(nowStr);
+        waterChart.data.datasets[0].data.push(val);
+        waterChart.update();
+        renderTable();
     };
 
     client.connect({
         useSSL: true, userName: USER, password: PASS,
-        onSuccess: onConnect, onFailure: (e) => { console.log(e); }
+        onSuccess: () => { 
+            document.getElementById('mqtt-dot').className = "dot dot-green";
+            document.getElementById('mqtt-text').innerText = "ออนไลน์";
+            client.subscribe(TOPIC);
+            if(fullHistory.length > 0) {
+                fullHistory.slice(-15).forEach(i => { waterChart.data.labels.push(i.time); waterChart.data.datasets[0].data.push(i.val); });
+                waterChart.update();
+                document.getElementById('val-display').innerText = fullHistory[fullHistory.length-1].val.toFixed(2);
+                renderTable();
+            }
+        }
     });
 </script>
 </body>
