@@ -3,108 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WATERLEVEL Dashboard - Mobile Friendly</title>
+    <title>WATERLEVEL MONITOR - RF Application</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
-        /* --- CSS ปรับปรุงเพื่อมือถือ --- */
         :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --success: #2ed573; --danger: #ff4757; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--bg); margin: 0; padding: 10px; }
-
         .dashboard-container { max-width: 1200px; margin: auto; }
-
-        /* Header */
         .main-header { 
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white; padding: 15px; border-radius: 12px;
-            display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 20px;
         }
-        .status-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-        .status-badge { background: rgba(0,0,0,0.2); padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .dot-red { background-color: var(--danger); }
-        .dot-green { background-color: var(--success); }
-
-        /* Grid Layout */
+        .status-container { display: flex; gap: 15px; font-size: 0.9rem; margin-top: 10px; }
+        .status-item { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
+        .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+        .dot-green { background-color: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot-red { background-color: var(--danger); box-shadow: 0 0 8px var(--danger); }
         .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
-
-        /* Tablet & Desktop Layout */
-        @media (min-width: 992px) { 
-            .grid-layout { grid-template-columns: 350px 1fr; gap: 20px; } 
-            .main-header { flex-direction: row; justify-content: space-between; padding: 15px 30px; }
-            body { padding: 20px; }
-        }
-
-        /* Card Styles */
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .card-title { font-size: 1rem; font-weight: 600; color: var(--primary); margin-bottom: 12px; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
-
-        /* Current Value (Responsive Font) */
-        .current-num { font-size: clamp(3.5rem, 15vw, 5rem); font-weight: 800; text-align: center; color: var(--primary); margin: 5px 0; line-height: 1; }
-        .unit-label { text-align: center; color: #636e72; font-size: 1rem; }
-        
-        /* Chart Container */
-        .chart-container { position: relative; height: 280px; width: 100%; }
-
-        /* Table & Pagination */
-        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 400px; font-size: 0.9rem; }
-        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
-        th { background-color: #f1f3f5; color: var(--primary); }
-
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
-        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-        .btn-page:disabled { background: #ccc; }
+        @media (min-width: 992px) { .grid-layout { grid-template-columns: 350px 1fr; gap: 25px; } }
+        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        .current-num { font-size: 4rem; font-weight: 800; color: var(--primary); text-align: center; margin: 10px 0; }
+        .unit { font-size: 1.2rem; color: #636e72; font-weight: 400; }
+        .time-update { text-align: center; color: #636e72; font-size: 0.85rem; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { color: var(--primary); font-weight: 600; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+        .btn-page { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn-page:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
     <header class="main-header">
-        <h2 style="margin:0; font-size: 1.4rem;">WATERLEVEL MONITOR</h2>
-        <div class="status-group">
-            <div class="status-badge"><span id="mqtt-dot" class="dot dot-red"></span> MQTT: <span id="mqtt-text">OFF</span></div>
-            <div class="status-badge"><span id="device-dot" class="dot dot-red"></span> DEVICE: <span id="device-text">OFF</span></div>
+        <h1 style="margin:0; font-size: 1.5rem;">WATERLEVEL MONITOR (RF Application)</h1>
+        <div class="status-container">
+            <div class="status-item">
+                <span id="mqtt-dot" class="dot dot-red"></span> MQTT: <span id="mqtt-text">เชื่อมต่อ...</span>
+            </div>
+            <div class="status-item">
+                <span id="device-dot" class="dot dot-red"></span> Device: <span id="device-text">ออฟไลน์</span>
+            </div>
         </div>
     </header>
 
     <div class="grid-layout">
         <div class="card">
             <div class="card-title">💧 ระดับน้ำปัจจุบัน</div>
-            <div class="current-num" id="val-display">0.00</div>
-            <div class="unit-label">เมตร (m)</div>
-            <div id="time-display" style="text-align:center; color:#999; font-size:0.7rem; margin-top:10px;">รอรับข้อมูล...</div>
+            <div class="current-num"><span id="val-display">0.00</span> <span class="unit">m</span></div>
+            <p id="time-display" class="time-update">กำลังดึงข้อมูลล่าสุด...</p>
         </div>
 
         <div class="card">
-            <div class="card-title">📈 กราฟระดับน้ำ (Real-time)</div>
+            <div class="card-title">📈 กราฟแสดงแนวโน้ม (Firebase History)</div>
             <div class="chart-container">
                 <canvas id="waterChart"></canvas>
             </div>
         </div>
 
         <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">📋 บันทึกข้อมูล (15 รายการ/หน้า)</div>
-            <div class="table-responsive">
+            <div class="card-title">📋 ประวัติข้อมูลย้อนหลัง</div>
+            <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>#</th><th>วัน/เวลา</th><th>ระดับน้ำ (m)</th></tr></thead>
-                    <tbody id="table-body"></tbody>
+                    <thead>
+                        <tr><th>ลำดับ</th><th>วัน-เวลา</th><th>ระดับน้ำ (m)</th></tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="3" style="text-align:center;">กำลังโหลด...</td></tr>
+                    </tbody>
                 </table>
             </div>
             <div class="pagination">
-                <button id="prevPage" class="btn-page" onclick="changePage(-1)">ก่อนหน้า</button>
-                <span style="font-size: 0.8rem;">หน้า <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
-                <button id="nextPage" class="btn-page" onclick="changePage(1)">ถัดไป</button>
+                <button class="btn-page" id="prevPage" onclick="changePage(-1)">ก่อนหน้า</button>
+                <span>หน้า <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
+                <button class="btn-page" id="nextPage" onclick="changePage(1)">ถัดไป</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- ตั้งค่า MQTT ---
+    // --- 1. Firebase Config ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDEuTlsftqeh8_5GnVCTJVq09a0UKwOpVg",
+        authDomain: "waterlevel-project-c9022.firebaseapp.com",
+        databaseURL: "https://waterlevel-project-c9022-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "waterlevel-project-c9022",
+        storageBucket: "waterlevel-project-c9022.firebasestorage.app",
+        messagingSenderId: "146995523873",
+        appId: "1:146995523873:web:4b814d920d9b16bf2d8e60"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // --- 2. MQTT Config ---
     const HOST = "ddf77777.ala.asia-southeast1.emqxsl.com";
     const PORT = 8084;
     const TOPIC = "water/001/data";
@@ -112,42 +115,95 @@
     const PASS = "P@ssw0rd";
 
     let lastMessageTime = null;
+    let fullHistory = [];
     let currentPage = 1;
     const rowsPerPage = 15;
-    let fullHistory = JSON.parse(localStorage.getItem('water_history')) || [];
 
     const client = new Paho.MQTT.Client(HOST, PORT, "web_ui_" + Math.random().toString(16).substr(2, 5));
 
-    // --- Chart.js Config ---
+    // --- 3. Chart Config ---
     const ctx = document.getElementById('waterChart').getContext('2d');
     const waterChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: 'ระดับน้ำ (m)', data: [], borderColor: '#0056b3', backgroundColor: 'rgba(102, 222, 255, 0.2)', fill: true, tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, suggestedMax: 5 } } }
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'ระดับน้ำ (m)',
+                data: [],
+                borderColor: '#0056b3',
+                backgroundColor: 'rgba(102, 222, 255, 0.2)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, suggestedMax: 5 } }
+        }
     });
 
-    function checkDeviceStatus() {
-        if (!lastMessageTime) return;
-        const diffInMinutes = (new Date() - lastMessageTime) / 60000;
-        const isOnline = diffInMinutes < 15;
-        document.getElementById('device-dot').className = isOnline ? "dot dot-green" : "dot dot-red";
-        document.getElementById('device-text').innerText = isOnline ? "ออนไลน์" : "ออฟไลน์";
+    // --- 4. Core Logic ---
+
+    function syncFirebaseData() {
+        database.ref('water_levels').limitToLast(100).on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                fullHistory = Object.keys(data).map(key => data[key]);
+                
+                // ตรวจสอบสถานะจากข้อมูลล่าสุดทันทีที่โหลดข้อมูลจาก Firebase
+                const latest = fullHistory[fullHistory.length - 1];
+                if (latest && latest.timestamp) {
+                    lastMessageTime = new Date(latest.timestamp);
+                    checkDeviceStatus(); 
+                }
+
+                const recentForChart = fullHistory.slice(-20);
+                waterChart.data.labels = recentForChart.map(d => d.time);
+                waterChart.data.datasets[0].data = recentForChart.map(d => d.val);
+                waterChart.update();
+
+                document.getElementById('val-display').innerText = latest.val.toFixed(2);
+                document.getElementById('time-display').innerText = "อัปเดตล่าสุด: " + latest.fullTime;
+                
+                renderTable();
+            }
+        });
     }
-    setInterval(checkDeviceStatus, 10000);
+
+    function checkDeviceStatus() {
+        if (!lastMessageTime) {
+            updateStatusUI(false);
+            return;
+        }
+        const now = new Date();
+        const diffInSeconds = (now - lastMessageTime) / 1000;
+        const fiveMinutes = 5 * 60; 
+
+        updateStatusUI(diffInSeconds < fiveMinutes);
+    }
+
+    function updateStatusUI(isOnline) {
+        const dot = document.getElementById('device-dot');
+        const text = document.getElementById('device-text');
+        dot.className = isOnline ? "dot dot-green" : "dot dot-red";
+        text.innerText = isOnline ? "ออนไลน์" : "ออฟไลน์ (ไม่มีข้อมูลเกิน 5 นาที)";
+    }
 
     function renderTable() {
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = "";
-        const displayData = [...fullHistory].reverse();
+        const tableData = [...fullHistory].reverse();
         const start = (currentPage - 1) * rowsPerPage;
-        const paginatedItems = displayData.slice(start, start + rowsPerPage);
+        const paginatedItems = tableData.slice(start, start + rowsPerPage);
 
         paginatedItems.forEach((item, index) => {
             const row = tbody.insertRow();
-            row.innerHTML = `<td>${displayData.length - (start + index)}</td><td>${item.fullTime}</td><td><b style="color:#0056b3">${item.val.toFixed(2)} m</b></td>`;
+            row.innerHTML = `<td>${tableData.length - (start + index)}</td><td>${item.fullTime}</td><td><b style="color:var(--primary)">${item.val.toFixed(2)} m</b></td>`;
         });
 
-        const totalPages = Math.ceil(fullHistory.length / rowsPerPage) || 1;
+        const totalPages = Math.ceil(tableData.length / rowsPerPage) || 1;
         document.getElementById('currentPage').innerText = currentPage;
         document.getElementById('totalPages').innerText = totalPages;
         document.getElementById('prevPage').disabled = currentPage === 1;
@@ -156,46 +212,38 @@
 
     function changePage(dir) { currentPage += dir; renderTable(); }
 
-    client.onMessageArrived = function(message) {
-        const val = parseFloat(message.payloadString.replace(/[^\d.-]/g, ''));
+    // --- 5. MQTT Event ---
+
+    client.onMessageArrived = function (message) {
+        let val = parseFloat(message.payloadString.replace(/[^\d.-]/g, ''));
         if (isNaN(val)) return;
 
-        const now = new Date();
-        const nowStr = now.toLocaleTimeString('th-TH');
-        lastMessageTime = now;
-        checkDeviceStatus();
+        let now = new Date();
+        let timeLabel = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+        let fullTimeLabel = now.toLocaleString('th-TH');
 
-        document.getElementById('val-display').innerText = val.toFixed(2);
-        document.getElementById('time-display').innerText = "อัปเดตล่าสุด: " + now.toLocaleString('th-TH');
-
-        fullHistory.push({ time: nowStr, fullTime: now.toLocaleString('th-TH'), val: val });
-        if (fullHistory.length > 100) fullHistory.shift();
-        localStorage.setItem('water_history', JSON.stringify(fullHistory));
-
-        if (waterChart.data.labels.length > 15) {
-            waterChart.data.labels.shift();
-            waterChart.data.datasets[0].data.shift();
-        }
-        waterChart.data.labels.push(nowStr);
-        waterChart.data.datasets[0].data.push(val);
-        waterChart.update();
-        renderTable();
+        // บันทึกลง Firebase
+        database.ref('water_levels').push({
+            val: val,
+            time: timeLabel,
+            fullTime: fullTimeLabel,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
     };
 
     client.connect({
         useSSL: true, userName: USER, password: PASS,
-        onSuccess: () => { 
+        onSuccess: () => {
             document.getElementById('mqtt-dot').className = "dot dot-green";
             document.getElementById('mqtt-text').innerText = "ออนไลน์";
             client.subscribe(TOPIC);
-            if(fullHistory.length > 0) {
-                fullHistory.slice(-15).forEach(i => { waterChart.data.labels.push(i.time); waterChart.data.datasets[0].data.push(i.val); });
-                waterChart.update();
-                document.getElementById('val-display').innerText = fullHistory[fullHistory.length-1].val.toFixed(2);
-                renderTable();
-            }
+            syncFirebaseData(); 
         }
     });
+
+    // ตรวจสอบสถานะทุกๆ 30 วินาที
+    setInterval(checkDeviceStatus, 30000);
 </script>
+
 </body>
 </html>
