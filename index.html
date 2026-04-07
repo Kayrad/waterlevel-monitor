@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WATERLEVEL MONITOR</title>
+    <title>NORTH TOWN - MONITORING</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --success: #2ed573; --danger: #ff4757; }
+        :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --success: #2ed573; --danger: #ff4757; --warning: #ffa502; }
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
         body { background-color: var(--bg); margin: 0; padding: 10px; }
         .dashboard-container { max-width: 1200px; margin: auto; }
@@ -31,38 +32,30 @@
         .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .card-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
 
-        .filter-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        select, input[type="date"] {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.9rem;
-            outline: none;
-        }
-        #dateInputContainer { display: none; align-items: center; gap: 8px; }
-
         .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media (min-width: 992px) { .grid-layout { grid-template-columns: 350px 1fr; gap: 20px; } }
+        @media (min-width: 992px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
         
-        .current-num { font-size: 4rem; font-weight: 800; color: var(--primary); text-align: center; margin: 10px 0; }
+        .current-num { font-size: 3.5rem; font-weight: 800; color: var(--primary); text-align: center; margin: 5px 0; }
+        .bat-num { color: var(--warning); }
         .unit { font-size: 1.2rem; color: #636e72; font-weight: 400; }
-        .chart-container { position: relative; height: 350px; width: 100%; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { color: var(--primary); background: #fdfdfd; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        th { color: var(--primary); }
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-        .btn-page { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
-        .btn-page:disabled { background: #ccc; }
+        /* Pagination Styles */
+        .pagination-ctrl { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
+        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-page:disabled { background: #ccc; cursor: not-allowed; }
+        .page-info { font-size: 0.8rem; color: #666; }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
     <header class="main-header">
-        <h1 style="margin:0; font-size: 1.5rem;">WATERLEVEL MONITOR</h1>
-	<h2 style="margin:0; font-size: 1.5rem;">(Rf Application)</h2>
+        <h1 style="margin:0; font-size: 1.5rem;">NORTH TOWN MONITOR</h1>
         <div class="status-container">
             <div class="status-item"><span id="mqtt-dot" class="dot dot-red"></span> MQTT: <span id="mqtt-text">เชื่อมต่อ...</span></div>
             <div class="status-item"><span id="device-dot" class="dot dot-red"></span> Device: <span id="device-text">ออฟไลน์</span></div>
@@ -70,57 +63,68 @@
     </header>
 
     <div class="card">
-        <div class="card-title">🔍 ตัวเลือกการดูข้อมูล</div>
-        <div class="filter-controls">
-            <span>เลือกช่วงเวลา:</span>
-            <select id="timeFilter" onchange="handleFilterChange()">
-                <option value="3" selected>ย้อนหลัง 3 วัน</option>
-                <option value="1">ย้อนหลัง 1 วัน</option>
-                <option value="7">ย้อนหลัง 7 วัน</option>
-                <option value="30">ย้อนหลัง 30 วัน</option>
-                <option value="custom">เลือกดูย้อนหลังแบบวันที่</option>
-            </select>
-
-            <div id="dateInputContainer">
-                <span>ระบุวันที่:</span>
-                <input type="date" id="dateSelect" onchange="filterByDate()">
-            </div>
-        </div>
+        <span>เลือกช่วงเวลา: </span>
+        <select id="timeFilter" onchange="loadAllData()" style="padding:8px; border-radius:8px;">
+            <option value="0.125">ย้อนหลัง 3 ชั่วโมง</option>
+            <option value="1">ย้อนหลัง 1 วัน</option>
+            <option value="3" selected>ย้อนหลัง 3 วัน</option>
+            <option value="7">ย้อนหลัง 7 วัน</option>
+        </select>
     </div>
 
     <div class="grid-layout">
         <div class="card">
             <div class="card-title">💧 ระดับน้ำปัจจุบัน</div>
             <div class="current-num"><span id="val-display">0.00</span> <span class="unit">m</span></div>
-            <p id="time-display" style="text-align:center; font-size:0.8rem; color:#666;">กำลังดึงข้อมูล...</p>
+            <p id="time-display" style="text-align:center; font-size:0.8rem; color:#666;">รอข้อมูล...</p>
         </div>
-
         <div class="card">
-            <div class="card-title">📈 กราฟแสดงแนวโน้ม</div>
-            <div class="chart-container">
-                <canvas id="waterChart"></canvas>
+            <div class="card-title">🔋 แบตเตอรี่ปัจจุบัน</div>
+            <div class="current-num bat-num"><span id="bat-display">0.00</span> <span class="unit">V</span></div>
+            <p id="bat-time-display" style="text-align:center; font-size:0.8rem; color:#666;">รอข้อมูล...</p>
+        </div>
+    </div>
+
+    <div class="grid-layout">
+        <div class="card">
+            <div class="card-title">📈 กราฟระดับน้ำ</div>
+            <div class="chart-container"><canvas id="waterChart"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="card-title">⚡ กราฟแบตเตอรี่</div>
+            <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="grid-layout">
+        <div class="card">
+            <div class="card-title">📋 ประวัติระดับน้ำ</div>
+            <table>
+                <thead><tr><th>เวลา</th><th>ระดับน้ำ (m)</th></tr></thead>
+                <tbody id="water-table-body"></tbody>
+            </table>
+            <div class="pagination-ctrl">
+                <button class="btn-page" id="waterPrev" onclick="changePage('water', -1)">ก่อนหน้า</button>
+                <span class="page-info" id="waterPageInfo">หน้า 1 / 1</span>
+                <button class="btn-page" id="waterNext" onclick="changePage('water', 1)">ถัดไป</button>
             </div>
         </div>
-
-        <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">📋 ประวัติข้อมูล</div>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead><tr><th>ลำดับ</th><th>วัน-เวลา</th><th>ระดับน้ำ (m)</th></tr></thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
-            <div class="pagination">
-                <button class="btn-page" id="prevPage" onclick="changePage(-1)">ก่อนหน้า</button>
-                <span id="pageInfo">หน้า 1 / 1</span>
-                <button class="btn-page" id="nextPage" onclick="changePage(1)">ถัดไป</button>
+        <div class="card">
+            <div class="card-title">📋 ประวัติแบตเตอรี่</div>
+            <table>
+                <thead><tr><th>เวลา</th><th>แรงดัน (V)</th></tr></thead>
+                <tbody id="bat-table-body"></tbody>
+            </table>
+            <div class="pagination-ctrl">
+                <button class="btn-page" id="batPrev" onclick="changePage('bat', -1)">ก่อนหน้า</button>
+                <span class="page-info" id="batPageInfo">หน้า 1 / 1</span>
+                <button class="btn-page" id="batNext" onclick="changePage('bat', 1)">ถัดไป</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- Configuration ---
     const firebaseConfig = {
         apiKey: "AIzaSyDEuTlsftqeh8_5GnVCTJVq09a0UKwOpVg",
         authDomain: "waterlevel-project-c9022.firebaseapp.com",
@@ -130,136 +134,103 @@
         messagingSenderId: "146995523873",
         appId: "1:146995523873:web:4b814d920d9b16bf2d8e60"
     };
-
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     const HOST = "ddf77777.ala.asia-southeast1.emqxsl.com";
     const PORT = 8084;
-    const TOPIC = "water/001/data";
+    const TOPIC_WATER = "water/001/data";
+    const TOPIC_BAT = "water/001/bat";
     const USER = "guybroker";
     const PASS = "P@ssw0rd";
 
-    let lastMessageTime = null;
-    let fullHistory = [];
-    let currentPage = 1;
-    const rowsPerPage = 15;
-    let isRealtimeEnabled = true; // เปิดการดักฟังข้อมูลใหม่เสมอ
+    const ROWS_PER_PAGE = 10;
+    let waterData = [], batData = [];
+    let waterPage = 1, batPage = 1;
+    let lastWaterTime = null;
 
-    const client = new Paho.MQTT.Client(HOST, PORT, "web_ui_" + Math.random().toString(16).substr(2, 5));
+    const client = new Paho.MQTT.Client(HOST, PORT, "web_mhoo_" + Math.random().toString(16).substr(2, 5));
 
-    const ctx = document.getElementById('waterChart').getContext('2d');
-    const waterChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: [], datasets: [{ label: 'ระดับน้ำ (m)', data: [], borderColor: '#0056b3', backgroundColor: 'rgba(102, 222, 255, 0.2)', fill: true, tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, suggestedMax: 5 } } }
-    });
-
-    // --- Filter Logic ---
-    function handleFilterChange() {
-        const filterValue = document.getElementById('timeFilter').value;
-        const dateContainer = document.getElementById('dateInputContainer');
-
-        dateContainer.style.display = (filterValue === 'custom') ? 'flex' : 'none';
-
-        if (filterValue !== 'custom') {
-            filterByDays(parseInt(filterValue));
-        }
+    function initChart(id, label, color, bg) {
+        return new Chart(document.getElementById(id).getContext('2d'), {
+            type: 'line',
+            data: { datasets: [{ label: label, data: [], borderColor: color, backgroundColor: bg, fill: true, tension: 0.3, spanGaps: true }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: 'hour' } } } }
+        });
     }
+    const waterChart = initChart('waterChart', 'ระดับน้ำ (m)', '#0056b3', 'rgba(102, 222, 255, 0.2)');
+    const batteryChart = initChart('batteryChart', 'แบตเตอรี่ (V)', '#ffa502', 'rgba(255, 165, 2, 0.1)');
 
-    function filterByDays(days) {
-        database.ref('water_levels').off();
+    function loadAllData() {
+        const days = parseFloat(document.getElementById('timeFilter').value);
         const startTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+
+        database.ref('water_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
+            waterData = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+            if(waterData.length > 0) {
+                const latest = waterData[0];
+                document.getElementById('val-display').innerText = latest.val.toFixed(2);
+                document.getElementById('time-display').innerText = "ล่าสุด: " + latest.fullTime;
+                lastWaterTime = latest.timestamp;
+                const cData = [...waterData].sort((a,b)=>a.timestamp-b.timestamp);
+                waterChart.data.datasets[0].data = cData.map(i => ({x: i.timestamp, y: i.val}));
+                waterChart.update('none');
+                renderTable('water');
+            }
+        });
+
+        database.ref('battery_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
+            batData = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+            if(batData.length > 0) {
+                const latest = batData[0];
+                document.getElementById('bat-display').innerText = latest.val.toFixed(2);
+                document.getElementById('bat-time-display').innerText = "ล่าสุด: " + latest.fullTime;
+                const cData = [...batData].sort((a,b)=>a.timestamp-b.timestamp);
+                batteryChart.data.datasets[0].data = cData.map(i => ({x: i.timestamp, y: i.val}));
+                batteryChart.update('none');
+                renderTable('bat');
+            }
+        });
+    }
+
+    function renderTable(type) {
+        const isWater = type === 'water';
+        const data = isWater ? waterData : batData;
+        const page = isWater ? waterPage : batPage;
+        const tbody = document.getElementById(isWater ? 'water-table-body' : 'bat-table-body');
         
-        // ใช้ .on เพื่อให้ถ้ามีข้อมูลใหม่ในช่วงที่เลือก กราฟจะขยับตาม
-        database.ref('water_levels').orderByChild('timestamp').startAt(startTime).on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const dataArray = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-                updateDashboard(dataArray);
-            }
-        });
+        const start = (page - 1) * ROWS_PER_PAGE;
+        const paginated = data.slice(start, start + ROWS_PER_PAGE);
+        const totalPages = Math.ceil(data.length / ROWS_PER_PAGE) || 1;
+
+        tbody.innerHTML = paginated.map(i => `
+            <tr>
+                <td>${i.fullTime}</td>
+                <td style="color:${isWater ? 'var(--primary)' : 'var(--warning)'}"><b>${i.val.toFixed(2)} ${isWater ? 'm' : 'V'}</b></td>
+            </tr>
+        `).join('');
+
+        document.getElementById(isWater ? 'waterPageInfo' : 'batPageInfo').innerText = `หน้า ${page} / ${totalPages}`;
+        document.getElementById(isWater ? 'waterPrev' : 'batPrev').disabled = (page === 1);
+        document.getElementById(isWater ? 'waterNext' : 'batNext').disabled = (page === totalPages);
     }
 
-    function filterByDate() {
-        database.ref('water_levels').off();
-        const selectedDate = document.getElementById('dateSelect').value;
-        if (!selectedDate) return;
-        const startOfDay = new Date(selectedDate).setHours(0, 0, 0, 0);
-        const endOfDay = new Date(selectedDate).setHours(23, 59, 59, 999);
-
-        database.ref('water_levels').orderByChild('timestamp').startAt(startOfDay).endAt(endOfDay).once('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const dataArray = Object.values(data).sort((a, b) => a.timestamp - b.timestamp);
-                updateDashboard(dataArray);
-            } else {
-                alert("ไม่พบข้อมูลในช่วงวันที่เลือก");
-                filterByDays(3); // กลับไปค่าเริ่มต้น
-                document.getElementById('timeFilter').value = '3';
-            }
-        });
+    function changePage(type, direction) {
+        if (type === 'water') { waterPage += direction; renderTable('water'); }
+        else { batPage += direction; renderTable('bat'); }
     }
 
-    function updateDashboard(dataArray) {
-        fullHistory = dataArray;
-        const latest = dataArray[dataArray.length - 1];
-
-        if (latest) {
-            lastMessageTime = new Date(latest.timestamp);
-            document.getElementById('val-display').innerText = latest.val.toFixed(2);
-            document.getElementById('time-display').innerText = "ข้อมูลล่าสุด: " + latest.fullTime;
-            checkDeviceStatus();
-        }
-
-        const step = dataArray.length > 150 ? Math.ceil(dataArray.length / 100) : 1;
-        const chartData = dataArray.filter((_, i) => i % step === 0);
-
-        waterChart.data.labels = chartData.map(d => d.time);
-        waterChart.data.datasets[0].data = chartData.map(d => d.val);
-        waterChart.update();
-
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML = "";
-        const tableData = [...fullHistory].reverse();
-        const start = (currentPage - 1) * rowsPerPage;
-        const paginated = tableData.slice(start, start + rowsPerPage);
-
-        paginated.forEach((item, index) => {
-            const row = tbody.insertRow();
-            row.innerHTML = `<td>${tableData.length - (start + index)}</td><td>${item.fullTime}</td><td><b style="color:var(--primary)">${item.val.toFixed(2)} m</b></td>`;
-        });
-
-        const totalPages = Math.ceil(tableData.length / rowsPerPage) || 1;
-        document.getElementById('pageInfo').innerText = `หน้า ${currentPage} / ${totalPages}`;
-        document.getElementById('prevPage').disabled = (currentPage === 1);
-        document.getElementById('nextPage').disabled = (currentPage === totalPages);
-    }
-
-    function changePage(dir) { currentPage += dir; renderTable(); }
-
-    function checkDeviceStatus() {
-        if (!lastMessageTime) return;
-        const diff = (new Date() - lastMessageTime) / 1000;
-        const isOnline = diff < 300; 
-        document.getElementById('device-dot').className = isOnline ? "dot dot-green" : "dot dot-red";
-        document.getElementById('device-text').innerText = isOnline ? "ออนไลน์" : "ออฟไลน์ (เกิน 5 นาที)";
-    }
-
-    client.onMessageArrived = function (message) {
-        let val = parseFloat(message.payloadString.replace(/[^\d.-]/g, ''));
-        if (isNaN(val)) return;
+    client.onMessageArrived = function (msg) {
+        let rawVal = parseFloat(msg.payloadString.replace(/[^\d.-]/g, ''));
+        if (isNaN(rawVal)) return;
         const now = new Date();
-        database.ref('water_levels').push({
-            val: val,
-            time: now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0'),
+        const payload = {
+            val: (msg.destinationName === TOPIC_BAT) ? (rawVal / 100) : rawVal,
             fullTime: now.toLocaleString('th-TH'),
             timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
+        };
+        if (msg.destinationName === TOPIC_WATER) database.ref('water_levels').push(payload);
+        if (msg.destinationName === TOPIC_BAT) database.ref('battery_levels').push(payload);
     };
 
     client.connect({
@@ -267,13 +238,18 @@
         onSuccess: () => {
             document.getElementById('mqtt-dot').className = "dot dot-green";
             document.getElementById('mqtt-text').innerText = "ออนไลน์";
-            client.subscribe(TOPIC);
-            filterByDays(3); // Default เริ่มต้น
+            client.subscribe(TOPIC_WATER);
+            client.subscribe(TOPIC_BAT);
+            loadAllData();
         }
     });
 
-    setInterval(checkDeviceStatus, 30000);
+    setInterval(() => {
+        if (!lastWaterTime) return;
+        const isOnline = (Date.now() - lastWaterTime) < 300000;
+        document.getElementById('device-dot').className = isOnline ? "dot dot-green" : "dot dot-red";
+        document.getElementById('device-text').innerText = isOnline ? "ออนไลน์" : "ออฟไลน์";
+    }, 10000);
 </script>
-
 </body>
 </html>
