@@ -71,9 +71,13 @@
         @media (min-width: 1400px) { .grid-layout { grid-template-columns: repeat(4, 1fr); } }
 
         .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        /* Table Style ย้อนคืน */
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; color: var(--text-main); }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border); }
-        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-page:disabled { background: #ccc; cursor: not-allowed; opacity: 0.3; }
+
         footer { text-align: center; padding: 30px; color: var(--text-sub); font-size: 0.85rem; }
         select { background: var(--card-bg); color: var(--text-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border); outline: none; cursor: pointer; }
     </style>
@@ -141,22 +145,22 @@
         <div class="card">
             <div class="card-title">📋 ประวัติระดับน้ำ</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (m)</th></tr></thead><tbody id="water-table"></tbody></table>
-            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('water',-1)">ก่อนหน้า</button> <span id="waterPage">1</span> <button class="btn-page" onclick="changePage('water',1)">ถัดไป</button></div>
+            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('water',-1)">ก่อนหน้า</button> <span id="waterPageInfo">1 / 1</span> <button class="btn-page" onclick="changePage('water',1)">ถัดไป</button></div>
         </div>
         <div class="card">
             <div class="card-title">📋 ประวัติแบตเตอรี่</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (V)</th></tr></thead><tbody id="bat-table"></tbody></table>
-            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('bat',-1)">ก่อนหน้า</button> <span id="batPage">1</span> <button class="btn-page" onclick="changePage('bat',1)">ถัดไป</button></div>
+            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('bat',-1)">ก่อนหน้า</button> <span id="batPageInfo">1 / 1</span> <button class="btn-page" onclick="changePage('bat',1)">ถัดไป</button></div>
         </div>
         <div class="card">
             <div class="card-title">📋 ประวัติอุณหภูมิตู้</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (°C)</th></tr></thead><tbody id="temp1-table"></tbody></table>
-            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('temp1',-1)">ก่อนหน้า</button> <span id="temp1Page">1</span> <button class="btn-page" onclick="changePage('temp1',1)">ถัดไป</button></div>
+            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('temp1',-1)">ก่อนหน้า</button> <span id="temp1PageInfo">1 / 1</span> <button class="btn-page" onclick="changePage('temp1',1)">ถัดไป</button></div>
         </div>
         <div class="card">
             <div class="card-title">📋 ประวัติอุณหภูมิเซ็นเซอร์</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (°C)</th></tr></thead><tbody id="temp2-table"></tbody></table>
-            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('temp2',-1)">ก่อนหน้า</button> <span id="temp2Page">1</span> <button class="btn-page" onclick="changePage('temp2',1)">ถัดไป</button></div>
+            <div style="text-align:center;margin-top:10px;"><button class="btn-page" onclick="changePage('temp2',-1)">ก่อนหน้า</button> <span id="temp2PageInfo">1 / 1</span> <button class="btn-page" onclick="changePage('temp2',1)">ถัดไป</button></div>
         </div>
     </div>
 
@@ -176,6 +180,7 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // Theme logic
     const toggleSwitch = document.querySelector('#checkbox');
     if (localStorage.getItem('theme') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); toggleSwitch.checked = true; }
     toggleSwitch.addEventListener('change', e => {
@@ -239,14 +244,17 @@
     function renderTable(type) {
         const tb = document.getElementById(type+'-table');
         const p = pages[type];
+        const total = Math.ceil(allData[type].length / ROWS) || 1;
         const data = allData[type].slice((p-1)*ROWS, p*ROWS);
+        
         tb.innerHTML = data.map(i => `<tr><td>${i.time}</td><td style="font-weight:bold;color:var(--primary)">${i.val}</td></tr>`).join('');
-        document.getElementById(type+'Page').innerText = p;
+        document.getElementById(type+'PageInfo').innerText = p + " / " + total;
     }
 
     function changePage(type, dir) {
-        const total = Math.ceil(allData[type].length/ROWS);
-        if(pages[type]+dir > 0 && pages[type]+dir <= total) { pages[type]+=dir; renderTable(type); }
+        const total = Math.ceil(allData[type].length/ROWS) || 1;
+        const newPage = pages[type] + dir;
+        if(newPage > 0 && newPage <= total) { pages[type] = newPage; renderTable(type); }
     }
 
     function checkStatus(ts) {
