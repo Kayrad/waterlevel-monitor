@@ -13,56 +13,38 @@
 
     <style>
         :root {
-            --primary: #0056b3;
-            --secondary: #66deff;
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-main: #333333;
-            --text-sub: #666666;
-            --border: #eeeeee;
-            --success: #2ed573;
-            --danger: #ff4757;
-            --warning: #ffa502;
+            --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --card-bg: #ffffff;
+            --text-main: #333333; --text-sub: #666666; --border: #eeeeee;
+            --success: #2ed573; --danger: #ff4757; --warning: #ffa502; --temp: #ff6b6b;
         }
-
         [data-theme="dark"] {
-            --primary: #12daf4;
-            --secondary: #0056b3;
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --text-sub: #bbbbbb;
-            --border: #333333;
+            --primary: #12daf4; --bg: #121212; --card-bg: #1e1e1e;
+            --text-main: #ffffff; --text-sub: #bbbbbb; --border: #333333;
         }
 
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; transition: background-color 0.3s, color 0.3s; }
         body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 10px; }
-        .dashboard-container { max-width: 1200px; margin: auto; }
+        .dashboard-container { max-width: 1400px; margin: auto; }
         
-        /* Header ปรับปรุงให้รองรับ Mobile */
         .main-header { 
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white; padding: 25px 15px; border-radius: 12px;
             display: flex; flex-direction: column; align-items: center; text-align: center; 
-            margin-bottom: 20px; position: relative; gap: 10px;
+            margin-bottom: 20px; gap: 10px;
         }
-
         .status-item { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
         .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .dot-green { background-color: var(--success); box-shadow: 0 0 8px var(--success); }
         .dot-red { background-color: var(--danger); box-shadow: 0 0 8px var(--danger); }
 
-        /* Theme Toggle ปรับมายุใต้ Status */
-        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
         .theme-switch { display: inline-block; height: 24px; position: relative; width: 44px; }
         .theme-switch input { display: none; }
         .slider { background-color: rgba(255,255,255,0.3); bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; border-radius: 34px; border: 1px solid white; }
         .slider:before { background-color: white; bottom: 3px; content: ""; height: 16px; left: 4px; position: absolute; transition: .4s; width: 16px; border-radius: 50%; }
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(20px); }
-        .mode-text { font-size: 0.85rem; font-weight: 500; }
-        
-        /* Card & Wave */
+
         .card { 
             background: var(--card-bg); border-radius: 20px; padding: 25px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 15px; 
@@ -70,29 +52,33 @@
         }
         .card-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; position: relative; z-index: 10; }
 
+        /* Wave UI */
         .wave-wrapper { position: absolute; width: 100%; height: 70px; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
         .waves { position: relative; width: 100%; height: 100%; }
         .water-wave use { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(102, 222, 255, 0.3); }
         .bat-wave use { animation: move-forever 8s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(255, 165, 2, 0.2); }
+        .temp-wave use { animation: move-forever 12s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(255, 107, 107, 0.15); }
         @keyframes move-forever { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
 
-        .current-num { font-size: 3.5rem; font-weight: 800; color: var(--primary); text-align: center; position: relative; z-index: 10; margin: 10px 0; line-height: 1; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .current-num { font-size: 3.5rem; font-weight: 800; color: var(--primary); text-align: center; z-index: 10; position: relative; margin: 10px 0; line-height: 1; }
+        .temp-num { color: var(--temp); }
         .bat-num { color: var(--warning); }
         .unit { font-size: 1.1rem; color: var(--text-sub); font-weight: 400; }
-        .time-label { text-align: center; font-size: 0.8rem; color: var(--text-sub); position: relative; z-index: 10; }
+        .time-label { text-align: center; font-size: 0.85rem; color: var(--text-sub); z-index: 10; position: relative; }
 
-        .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media (min-width: 992px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
         .chart-container { position: relative; height: 300px; width: 100%; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; color: var(--text-main); }
+        .tables-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-main); }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--border); }
-        th { color: var(--primary); font-weight: 600; }
+        th { color: var(--primary); }
 
         .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
         .btn-page:disabled { opacity: 0.2; }
         footer { text-align: center; padding: 30px; color: var(--text-sub); font-size: 0.85rem; }
-        select { background: var(--card-bg); color: var(--text-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border); outline: none; }
+        select { background: var(--card-bg); color: var(--text-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -100,23 +86,15 @@
 <div class="dashboard-container">
     <header class="main-header">
         <h1 style="margin:0; font-size: 1.6rem; letter-spacing: 1px;">WATER STATION DEMO</h1>
-        
-        <div class="status-item">
-            <span id="device-dot" class="dot dot-red"></span> 
-            Device Status: <span id="device-text">รอข้อมูล...</span>
-        </div>
-
+        <div class="status-item"><span id="device-dot" class="dot dot-red"></span> Device Status: <span id="device-text">รอข้อมูล...</span></div>
         <div class="theme-switch-wrapper">
-            <span class="mode-text">Dark Mode</span>
-            <label class="theme-switch" for="checkbox">
-                <input type="checkbox" id="checkbox" />
-                <div class="slider"></div>
-            </label>
+            <span style="font-size: 0.85rem;">Dark Mode</span>
+            <label class="theme-switch"><input type="checkbox" id="checkbox"><div class="slider"></div></label>
         </div>
     </header>
 
     <div class="card">
-        <span>ช่วงเวลา: </span>
+        <span>เลือกช่วงเวลา: </span>
         <select id="timeFilter" onchange="loadAllData()">
             <option value="0.01041" selected>15 นาที</option>
             <option value="0.02083">30 นาที</option>
@@ -124,65 +102,51 @@
             <option value="0.125">3 ชั่วโมง</option>
             <option value="1">1 วัน</option>
             <option value="7">7 วัน</option>
-            <option value="30">30 วัน</option>
         </select>
     </div>
 
-    <div class="grid-layout">
+    <div class="stats-grid">
         <div class="card">
             <div class="card-title">💧 ระดับน้ำปัจจุบัน (m)</div>
             <div class="current-num"><span id="val-display">0.000</span> <span class="unit">m</span></div>
-            <p id="time-display" class="time-label">กำลังรับข้อมูล...</p>
-            <div class="wave-wrapper">
-                <svg class="waves water-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
-                    <defs><path id="w-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
-                    <g class="parallax"><use href="#w-wave" x="48" y="0" /><use href="#w-wave" x="48" y="5" /></g>
-                </svg>
-            </div>
+            <p id="time-display" class="time-label">-</p>
+            <div class="wave-wrapper"><svg class="waves water-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="w" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#w" x="48" y="0"/><use href="#w" x="48" y="5"/></g></svg></div>
         </div>
-
         <div class="card">
             <div class="card-title">🔋 แบตเตอรี่ปัจจุบัน (V)</div>
             <div class="current-num bat-num"><span id="bat-display">0.00</span> <span class="unit">V</span></div>
-            <p id="bat-time-display" class="time-label">กำลังรับข้อมูล...</p>
-            <div class="wave-wrapper">
-                <svg class="waves bat-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
-                    <defs><path id="b-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
-                    <g class="parallax"><use href="#b-wave" x="48" y="0" /><use href="#b-wave" x="48" y="5" /></g>
-                </svg>
-            </div>
+            <p id="bat-time-display" class="time-label">-</p>
+            <div class="wave-wrapper"><svg class="waves bat-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="b" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#b" x="48" y="0"/><use href="#b" x="48" y="5"/></g></svg></div>
+        </div>
+        <div class="card">
+            <div class="card-title">🌡️ อุณหภูมิภายในตู้</div>
+            <div class="current-num temp-num"><span id="temp-display">0.0</span> <span class="unit">°C</span></div>
+            <p id="temp-time-display" class="time-label">-</p>
+            <div class="wave-wrapper"><svg class="waves temp-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="t" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#t" x="48" y="0"/><use href="#t" x="48" y="5"/></g></svg></div>
         </div>
     </div>
 
-    <div class="grid-layout">
-        <div class="card">
-            <div class="card-title">📈 กราฟระดับน้ำ</div>
-            <div class="chart-container"><canvas id="waterChart"></canvas></div>
-        </div>
-        <div class="card">
-            <div class="card-title">⚡ กราฟแบตเตอรี่</div>
-            <div class="chart-container"><canvas id="batteryChart"></canvas></div>
-        </div>
+    <div class="chart-grid">
+        <div class="card"><div class="card-title">📈 กราฟระดับน้ำ</div><div class="chart-container"><canvas id="waterChart"></canvas></div></div>
+        <div class="card"><div class="card-title">⚡ กราฟแบตเตอรี่</div><div class="chart-container"><canvas id="batteryChart"></canvas></div></div>
+        <div class="card"><div class="card-title">🌡️ กราฟอุณหภูมิ</div><div class="chart-container"><canvas id="tempChart"></canvas></div></div>
     </div>
 
-    <div class="grid-layout">
+    <div class="tables-grid">
         <div class="card">
             <div class="card-title">📋 ประวัติระดับน้ำ</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (m)</th></tr></thead><tbody id="water-table-body"></tbody></table>
-            <div style="text-align:center; margin-top:10px;">
-                <button class="btn-page" id="waterPrev" onclick="changePage('water', -1)">ก่อนหน้า</button>
-                <span id="waterPageInfo" style="font-size:0.8rem; margin:0 10px;"></span>
-                <button class="btn-page" id="waterNext" onclick="changePage('water', 1)">ถัดไป</button>
-            </div>
+            <div style="text-align:center; margin-top:10px;"><button class="btn-page" onclick="changePage('water', -1)">ก่อนหน้า</button> <span id="waterPageInfo"></span> <button class="btn-page" onclick="changePage('water', 1)">ถัดไป</button></div>
         </div>
         <div class="card">
             <div class="card-title">📋 ประวัติแบตเตอรี่</div>
             <table><thead><tr><th>เวลา</th><th>ค่า (V)</th></tr></thead><tbody id="bat-table-body"></tbody></table>
-            <div style="text-align:center; margin-top:10px;">
-                <button class="btn-page" id="batPrev" onclick="changePage('bat', -1)">ก่อนหน้า</button>
-                <span id="batPageInfo" style="font-size:0.8rem; margin:0 10px;"></span>
-                <button class="btn-page" id="batNext" onclick="changePage('bat', 1)">ถัดไป</button>
-            </div>
+            <div style="text-align:center; margin-top:10px;"><button class="btn-page" onclick="changePage('bat', -1)">ก่อนหน้า</button> <span id="batPageInfo"></span> <button class="btn-page" onclick="changePage('bat', 1)">ถัดไป</button></div>
+        </div>
+        <div class="card">
+            <div class="card-title">📋 ประวัติอุณหภูมิ</div>
+            <table><thead><tr><th>เวลา</th><th>ค่า (°C)</th></tr></thead><tbody id="temp-table-body"></tbody></table>
+            <div style="text-align:center; margin-top:10px;"><button class="btn-page" onclick="changePage('temp', -1)">ก่อนหน้า</button> <span id="tempPageInfo"></span> <button class="btn-page" onclick="changePage('temp', 1)">ถัดไป</button></div>
         </div>
     </div>
 
@@ -202,13 +166,9 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Theme Switch Logic
+    // Theme Switch
     const toggleSwitch = document.querySelector('#checkbox');
-    const currentTheme = localStorage.getItem('theme');
-    if (currentTheme) {
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        if (currentTheme === 'dark') toggleSwitch.checked = true;
-    }
+    if (localStorage.getItem('theme') === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); toggleSwitch.checked = true; }
     toggleSwitch.addEventListener('change', (e) => {
         const theme = e.target.checked ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
@@ -216,105 +176,99 @@
         updateChartTheme();
     });
 
-    // Chart Logic
-    const ROWS_PER_PAGE = 10;
-    let waterData = [], batData = [];
-    let waterPage = 1, batPage = 1;
-    let lastSeenTimestamp = 0;
+    let waterData = [], batData = [], tempData = [];
+    let waterPage = 1, batPage = 1, tempPage = 1;
+    const ROWS = 10;
 
-    function createChart(ctxId, label, color) {
-        return new Chart(document.getElementById(ctxId).getContext('2d'), {
+    function createChart(id, label, color) {
+        return new Chart(document.getElementById(id).getContext('2d'), {
             type: 'line',
-            data: { datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3 }] },
+            data: { datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color+'22', fill: true, tension: 0.3 }] },
             options: { 
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } }, grid: { color: 'rgba(150,150,150,0.1)' } },
-                    y: { grid: { color: 'rgba(150,150,150,0.1)' } }
-                },
-                plugins: { legend: { labels: { color: '#888', font: { family: 'Kanit' } } } }
+                responsive: true, maintainAspectRatio: false, 
+                scales: { x: { type: 'time', time: { unit: 'minute' }, grid: { color: 'rgba(150,150,150,0.1)' } } },
+                plugins: { legend: { labels: { font: { family: 'Kanit' } } } }
             }
         });
     }
-
     const waterChart = createChart('waterChart', 'ระดับน้ำ (m)', '#0056b3');
     const batteryChart = createChart('batteryChart', 'แบตเตอรี่ (V)', '#ffa502');
-
-    function updateChartTheme() {
-        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim();
-        [waterChart, batteryChart].forEach(chart => {
-            chart.options.scales.x.ticks.color = textColor;
-            chart.options.scales.y.ticks.color = textColor;
-            chart.update();
-        });
-    }
+    const tempChart = createChart('tempChart', 'อุณหภูมิ (°C)', '#ff6b6b');
 
     function loadAllData() {
         const days = parseFloat(document.getElementById('timeFilter').value);
         const now = Date.now();
-        const startTime = now - (days * 24 * 60 * 60 * 1000);
+        const start = now - (days * 86400000);
         const unit = days <= 0.125 ? 'minute' : (days <= 3 ? 'hour' : 'day');
-        
-        [waterChart, batteryChart].forEach(chart => {
-            chart.options.scales.x.time.unit = unit;
-            chart.options.scales.x.min = startTime; 
-            chart.options.scales.x.max = now;      
+
+        [waterChart, batteryChart, tempChart].forEach(c => {
+            c.options.scales.x.min = start; c.options.scales.x.max = now;
+            c.options.scales.x.time.unit = unit;
         });
 
-        database.ref('water_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
+        database.ref('water_levels').orderByChild('timestamp').startAt(start).on('value', snap => {
             const raw = snap.val() ? Object.values(snap.val()) : [];
-            waterData = raw.map(i => ({...i, val: i.val / 1000})).sort((a,b)=>b.timestamp-a.timestamp);
-            if(waterData.length > 0) {
+            waterData = raw.map(i => ({...i, val: i.val/1000})).sort((a,b)=>b.timestamp-a.timestamp);
+            if(waterData[0]) {
                 document.getElementById('val-display').innerText = waterData[0].val.toFixed(3);
                 document.getElementById('time-display').innerText = "ล่าสุด: " + waterData[0].fullTime;
-                waterChart.data.datasets[0].data = [...waterData].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x: i.timestamp, y: i.val}));
-                waterChart.update('none');
-                renderTable('water');
+                waterChart.data.datasets[0].data = [...waterData].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x:i.timestamp, y:i.val}));
+                waterChart.update('none'); renderTable('water');
             }
         });
 
-        database.ref('battery_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
+        database.ref('battery_levels').orderByChild('timestamp').startAt(start).on('value', snap => {
             batData = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
-            if(batData.length > 0) {
+            if(batData[0]) {
                 document.getElementById('bat-display').innerText = batData[0].val.toFixed(2);
                 document.getElementById('bat-time-display').innerText = "ล่าสุด: " + batData[0].fullTime;
-                lastSeenTimestamp = batData[0].timestamp;
-                batteryChart.data.datasets[0].data = [...batData].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x: i.timestamp, y: i.val}));
-                batteryChart.update('none');
-                renderTable('bat');
-                checkStatus();
+                batteryChart.data.datasets[0].data = [...batData].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x:i.timestamp, y:i.val}));
+                batteryChart.update('none'); renderTable('bat');
+                checkStatus(batData[0].timestamp);
+            }
+        });
+
+        database.ref('TEMP_EG8200').orderByChild('timestamp').startAt(start).on('value', snap => {
+            const raw = snap.val() ? Object.values(snap.val()) : [];
+            // แก้ไขตรงนี้: ดึงค่าจาก i.temp ตามรูปใน Firebase ของคุณ
+            tempData = raw.map(i => ({...i, val: parseFloat(i.temp)})).sort((a,b)=>b.timestamp-a.timestamp);
+            if(tempData[0]) {
+                document.getElementById('temp-display').innerText = tempData[0].val.toFixed(1);
+                document.getElementById('temp-time-display').innerText = "ล่าสุด: " + tempData[0].fullTime;
+                tempChart.data.datasets[0].data = [...tempData].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x:i.timestamp, y:i.val}));
+                tempChart.update('none'); renderTable('temp');
             }
         });
     }
 
     function renderTable(type) {
-        const isWater = type === 'water';
-        const data = isWater ? waterData : batData;
-        const page = isWater ? waterPage : batPage;
-        const tbody = document.getElementById(isWater ? 'water-table-body' : 'bat-table-body');
-        tbody.innerHTML = "";
-        const paginated = data.slice((page-1)*ROWS_PER_PAGE, page*ROWS_PER_PAGE);
-        const totalPages = Math.ceil(data.length/ROWS_PER_PAGE) || 1;
-        tbody.innerHTML = paginated.map(i => `<tr><td>${i.fullTime}</td><td style="font-weight:bold; color:var(--primary)">${i.val.toFixed(isWater ? 3 : 2)}</td></tr>`).join('');
-        document.getElementById(isWater ? 'waterPageInfo' : 'batPageInfo').innerText = `หน้า ${page} / ${totalPages}`;
-        document.getElementById(isWater ? 'waterPrev' : 'batPrev').disabled = (page === 1);
-        document.getElementById(isWater ? 'waterNext' : 'batNext').disabled = (page === totalPages);
+        const d = (type==='water')?waterData:(type==='bat')?batData:tempData;
+        const p = (type==='water')?waterPage:(type==='bat')?batPage:tempPage;
+        const tb = document.getElementById(type+'-table-body');
+        const paginated = d.slice((p-1)*ROWS, p*ROWS);
+        tb.innerHTML = paginated.map(i => `<tr><td>${i.fullTime.split(' ')[1]}</td><td><b>${i.val.toFixed(type==='water'?3:type==='bat'?2:1)}</b></td></tr>`).join('');
+        document.getElementById(type+'PageInfo').innerText = `หน้า ${p} / ${Math.ceil(d.length/ROWS)||1}`;
     }
 
-    function changePage(type, dir) {
-        if(type==='water') { waterPage += dir; renderTable('water'); }
-        else { batPage += dir; renderTable('bat'); }
+    function changePage(t, dir) {
+        if(t==='water') waterPage+=dir; else if(t==='bat') batPage+=dir; else tempPage+=dir;
+        renderTable(t);
     }
 
-    function checkStatus() {
-        const isOnline = (Date.now() - lastSeenTimestamp) < 600000;
-        document.getElementById('device-dot').className = isOnline ? "dot dot-green" : "dot dot-red";
-        document.getElementById('device-text').innerText = isOnline ? "ออนไลน์" : "ออฟไลน์";
+    function checkStatus(ts) {
+        const online = (Date.now() - ts) < 600000;
+        document.getElementById('device-dot').className = online ? "dot dot-green" : "dot dot-red";
+        document.getElementById('device-text').innerText = online ? "ออนไลน์" : "ออฟไลน์";
+    }
+
+    function updateChartTheme() {
+        const txt = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim();
+        [waterChart, batteryChart, tempChart].forEach(c => {
+            c.options.scales.x.ticks.color = txt; c.options.scales.y.ticks.color = txt; c.update();
+        });
     }
 
     loadAllData();
-    updateChartTheme();
-    setInterval(checkStatus, 30000);
 </script>
 </body>
 </html>
