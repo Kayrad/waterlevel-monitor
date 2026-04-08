@@ -32,12 +32,18 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 15px; 
             position: relative; overflow: hidden; border: 2px solid #eee;
         }
-        .card-title { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        .card-title { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; position: relative; z-index: 10; }
 
-        .current-num { font-size: 3.8rem; font-weight: 800; color: var(--primary); text-align: center; margin: 10px 0; line-height: 1; }
+        .wave-wrapper { position: absolute; width: 100%; height: 80px; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
+        .waves { position: relative; width: 100%; height: 100%; }
+        .water-wave use { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(102, 222, 255, 0.4); }
+        .bat-wave use { animation: move-forever 8s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(255, 165, 2, 0.3); }
+        @keyframes move-forever { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
+
+        .current-num { font-size: 3.8rem; font-weight: 800; color: var(--primary); text-align: center; position: relative; z-index: 10; margin: 10px 0; line-height: 1; }
         .bat-num { color: #d35400; }
         .unit { font-size: 1.2rem; color: #666; font-weight: 400; }
-        .time-label { text-align: center; font-size: 0.85rem; color: #888; }
+        .time-label { text-align: center; font-size: 0.85rem; color: #888; position: relative; z-index: 10; }
 
         .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media (min-width: 992px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
@@ -47,6 +53,7 @@
         .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .btn-page:disabled { background: #ccc; cursor: not-allowed; }
         footer { text-align: center; padding: 20px; color: #888; font-size: 0.9rem; }
+        select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; outline: none; cursor: pointer; font-family: 'Kanit', sans-serif; }
     </style>
 </head>
 <body>
@@ -60,8 +67,10 @@
     <div class="card">
         <span>เลือกช่วงเวลาแสดงกราฟ: </span>
         <select id="timeFilter" onchange="loadAllData()">
-            <option value="1" selected>ย้อนหลัง 1 วัน</option>
-            <option value="3">ย้อนหลัง 3 วัน</option>
+            <option value="0.02083" selected>ย้อนหลัง 30 นาที</option>
+            <option value="0.04167">ย้อนหลัง 1 ชั่วโมง</option>
+            <option value="0.125">ย้อนหลัง 3 ชั่วโมง</option>
+            <option value="1">ย้อนหลัง 1 วัน</option>
             <option value="7">ย้อนหลัง 7 วัน</option>
             <option value="30">ย้อนหลัง 30 วัน</option>
         </select>
@@ -69,24 +78,37 @@
 
     <div class="grid-layout">
         <div class="card">
-            <div class="card-title">💧 ระดับน้ำล่าสุด (m)</div>
+            <div class="card-title">💧 ระดับน้ำปัจจุบัน (m)</div>
             <div class="current-num"><span id="val-display">0.000</span> <span class="unit">m</span></div>
             <p id="time-display" class="time-label">กำลังโหลด...</p>
+            <div class="wave-wrapper">
+                <svg class="waves water-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+                    <defs><path id="w-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
+                    <g class="parallax"><use href="#w-wave" x="48" y="0" /><use href="#w-wave" x="48" y="5" /></g>
+                </svg>
+            </div>
         </div>
+
         <div class="card">
-            <div class="card-title">🔋 แบตเตอรี่ล่าสุด (V)</div>
+            <div class="card-title">🔋 แบตเตอรี่ปัจจุบัน (V)</div>
             <div class="current-num bat-num"><span id="bat-display">0.00</span> <span class="unit">V</span></div>
             <p id="bat-time-display" class="time-label">กำลังโหลด...</p>
+            <div class="wave-wrapper">
+                <svg class="waves bat-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+                    <defs><path id="b-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
+                    <g class="parallax"><use href="#b-wave" x="48" y="0" /><use href="#b-wave" x="48" y="5" /></g>
+                </svg>
+            </div>
         </div>
     </div>
 
     <div class="grid-layout">
         <div class="card">
-            <div class="card-title">📈 กราฟระดับน้ำ (หน่วย: เมตร)</div>
+            <div class="card-title">📈 กราฟแนวโน้มระดับน้ำ</div>
             <div class="chart-container"><canvas id="waterChart"></canvas></div>
         </div>
         <div class="card">
-            <div class="card-title">⚡ กราฟแบตเตอรี่ (หน่วย: โวลต์)</div>
+            <div class="card-title">⚡ กราฟแนวโน้มแบตเตอรี่</div>
             <div class="chart-container"><canvas id="batteryChart"></canvas></div>
         </div>
     </div>
@@ -139,7 +161,15 @@
             data: { datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3 }] },
             options: { 
                 responsive: true, maintainAspectRatio: false,
-                scales: { x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } } } } 
+                scales: { 
+                    x: { 
+                        type: 'time', 
+                        time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
+                        // ล็อคแกน X ไม่ให้ขยับเอง
+                        min: Date.now() - (0.02083 * 24 * 60 * 60 * 1000),
+                        max: Date.now()
+                    } 
+                }
             }
         });
     }
@@ -148,10 +178,19 @@
 
     function loadAllData() {
         const days = parseFloat(document.getElementById('timeFilter').value);
-        const startTime = Date.now() - (days * 24 * 60 * 60 * 1000);
+        const now = Date.now();
+        const startTime = now - (days * 24 * 60 * 60 * 1000);
+        
+        // ปรับสเกลแกน X ตามช่วงเวลาที่เลือก (นี่คือจุดที่ทำให้กราฟหด/ขยาย)
+        const unit = days <= 0.125 ? 'minute' : (days <= 3 ? 'hour' : 'day');
+        
+        [waterChart, batteryChart].forEach(chart => {
+            chart.options.scales.x.time.unit = unit;
+            chart.options.scales.x.min = startTime; // บังคับจุดเริ่มต้นตามวันที่เลือก
+            chart.options.scales.x.max = now;       // บังคับจุดสิ้นสุดคือตอนนี้
+        });
 
         database.ref('water_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
-            // ดึงข้อมูลและหาร 1000 สำหรับระดับน้ำ
             const raw = snap.val() ? Object.values(snap.val()) : [];
             waterData = raw.map(i => ({...i, val: i.val / 1000})).sort((a,b)=>b.timestamp-a.timestamp);
             
