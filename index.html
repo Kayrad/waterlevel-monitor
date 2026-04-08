@@ -34,6 +34,7 @@
         }
         .card-title { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; position: relative; z-index: 10; }
 
+        /* Wave UI */
         .wave-wrapper { position: absolute; width: 100%; height: 80px; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
         .waves { position: relative; width: 100%; height: 100%; }
         .water-wave use { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(102, 222, 255, 0.4); }
@@ -67,7 +68,7 @@
     <div class="card">
         <span>เลือกช่วงเวลาแสดงกราฟ: </span>
         <select id="timeFilter" onchange="loadAllData()">
-            <option value="0.02083" selected>ย้อนหลัง 30 นาที</option>
+            <option value="0.01041" selected>ย้อนหลัง 15 นาที</option> <option value="0.02083">ย้อนหลัง 30 นาที</option>
             <option value="0.04167">ย้อนหลัง 1 ชั่วโมง</option>
             <option value="0.125">ย้อนหลัง 3 ชั่วโมง</option>
             <option value="1">ย้อนหลัง 1 วัน</option>
@@ -164,10 +165,7 @@
                 scales: { 
                     x: { 
                         type: 'time', 
-                        time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } },
-                        // ล็อคแกน X ไม่ให้ขยับเอง
-                        min: Date.now() - (0.02083 * 24 * 60 * 60 * 1000),
-                        max: Date.now()
+                        time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } }
                     } 
                 }
             }
@@ -181,13 +179,13 @@
         const now = Date.now();
         const startTime = now - (days * 24 * 60 * 60 * 1000);
         
-        // ปรับสเกลแกน X ตามช่วงเวลาที่เลือก (นี่คือจุดที่ทำให้กราฟหด/ขยาย)
+        // ปรับสเกลแกน X ตามช่วงเวลาที่เลือก
         const unit = days <= 0.125 ? 'minute' : (days <= 3 ? 'hour' : 'day');
         
         [waterChart, batteryChart].forEach(chart => {
             chart.options.scales.x.time.unit = unit;
-            chart.options.scales.x.min = startTime; // บังคับจุดเริ่มต้นตามวันที่เลือก
-            chart.options.scales.x.max = now;       // บังคับจุดสิ้นสุดคือตอนนี้
+            chart.options.scales.x.min = startTime; 
+            chart.options.scales.x.max = now;      
         });
 
         database.ref('water_levels').orderByChild('timestamp').startAt(startTime).on('value', snap => {
