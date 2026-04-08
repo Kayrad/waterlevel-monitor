@@ -12,49 +12,89 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #0056b3; --secondary: #66deff; --bg: #f8f9fa; --success: #2ed573; --danger: #ff4757; --warning: #ffa502; }
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-        body { background-color: var(--bg); margin: 0; padding: 10px; }
+        /* ตัวแปรสีสำหรับ Light Mode และ Dark Mode */
+        :root {
+            --primary: #0056b3;
+            --secondary: #66deff;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --border: #eeeeee;
+            --success: #2ed573;
+            --danger: #ff4757;
+            --warning: #ffa502;
+        }
+
+        [data-theme="dark"] {
+            --primary: #12daf4;
+            --secondary: #0056b3;
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-sub: #bbbbbb;
+            --border: #333333;
+        }
+
+        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 10px; }
         .dashboard-container { max-width: 1200px; margin: auto; }
         
+        /* Header */
         .main-header { 
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white; padding: 15px; border-radius: 12px;
-            display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 20px;
+            color: white; padding: 20px; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; text-align: center; 
+            margin-bottom: 20px; position: relative;
         }
+
+        /* Toggle Switch Style */
+        .theme-switch-wrapper { position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 8px; }
+        .theme-switch { display: inline-block; height: 26px; position: relative; width: 50px; }
+        .theme-switch input { display: none; }
+        .slider { background-color: rgba(255,255,255,0.3); bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; border-radius: 34px; border: 1px solid white; }
+        .slider:before { background-color: white; bottom: 3px; content: ""; height: 18px; left: 4px; position: absolute; transition: .4s; width: 18px; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .mode-text { font-size: 0.8rem; font-weight: 500; }
+
         .status-item { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-top: 10px; }
         .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .dot-green { background-color: var(--success); box-shadow: 0 0 8px var(--success); }
         .dot-red { background-color: var(--danger); box-shadow: 0 0 8px var(--danger); }
         
+        /* Card & Wave UI */
         .card { 
-            background: white; border-radius: 20px; padding: 25px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 15px; 
-            position: relative; overflow: hidden; border: 2px solid #eee;
+            background: var(--card-bg); border-radius: 20px; padding: 25px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 15px; 
+            position: relative; overflow: hidden; border: 1px solid var(--border);
         }
-        .card-title { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid var(--bg); padding-bottom: 10px; position: relative; z-index: 10; }
+        .card-title { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; position: relative; z-index: 10; }
 
-        /* Wave UI */
         .wave-wrapper { position: absolute; width: 100%; height: 80px; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
         .waves { position: relative; width: 100%; height: 100%; }
-        .water-wave use { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(102, 222, 255, 0.4); }
-        .bat-wave use { animation: move-forever 8s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(255, 165, 2, 0.3); }
+        .water-wave use { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(102, 222, 255, 0.3); }
+        .bat-wave use { animation: move-forever 8s cubic-bezier(.55,.5,.45,.5) infinite; fill: rgba(255, 165, 2, 0.2); }
         @keyframes move-forever { 0% { transform: translate3d(-90px,0,0); } 100% { transform: translate3d(85px,0,0); } }
 
         .current-num { font-size: 3.8rem; font-weight: 800; color: var(--primary); text-align: center; position: relative; z-index: 10; margin: 10px 0; line-height: 1; }
-        .bat-num { color: #d35400; }
-        .unit { font-size: 1.2rem; color: #666; font-weight: 400; }
-        .time-label { text-align: center; font-size: 0.85rem; color: #888; position: relative; z-index: 10; }
+        .bat-num { color: var(--warning); }
+        .unit { font-size: 1.2rem; color: var(--text-sub); font-weight: 400; }
+        .time-label { text-align: center; font-size: 0.85rem; color: var(--text-sub); position: relative; z-index: 10; }
 
+        /* Grid & Table */
         .grid-layout { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media (min-width: 992px) { .grid-layout { grid-template-columns: 1fr 1fr; } }
         .chart-container { position: relative; height: 300px; width: 100%; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
-        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
-        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .btn-page:disabled { background: #ccc; cursor: not-allowed; }
-        footer { text-align: center; padding: 20px; color: #888; font-size: 0.9rem; }
-        select { padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; outline: none; cursor: pointer; font-family: 'Kanit', sans-serif; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; color: var(--text-main); }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { color: var(--primary); font-weight: 600; }
+
+        .btn-page { background: var(--primary); color: white; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+        footer { text-align: center; padding: 30px; color: var(--text-sub); font-size: 0.9rem; }
+        select { background: var(--card-bg); color: var(--text-main); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); outline: none; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -62,13 +102,23 @@
 <div class="dashboard-container">
     <header class="main-header">
         <h1 style="margin:0; font-size: 1.5rem;">WATER & BATTERY 24H MONITORING</h1>
+        
+        <div class="theme-switch-wrapper">
+            <span class="mode-text">🌙 Dark Mode</span>
+            <label class="theme-switch" for="checkbox">
+                <input type="checkbox" id="checkbox" />
+                <div class="slider"></div>
+            </label>
+        </div>
+
         <div class="status-item"><span id="device-dot" class="dot dot-red"></span> Device Status: <span id="device-text">ตรวจสอบสถานะ...</span></div>
     </header>
 
     <div class="card">
         <span>เลือกช่วงเวลาแสดงกราฟ: </span>
         <select id="timeFilter" onchange="loadAllData()">
-            <option value="0.01041" selected>ย้อนหลัง 15 นาที</option> <option value="0.02083">ย้อนหลัง 30 นาที</option>
+            <option value="0.01041" selected>ย้อนหลัง 15 นาที</option>
+            <option value="0.02083">ย้อนหลัง 30 นาที</option>
             <option value="0.04167">ย้อนหลัง 1 ชั่วโมง</option>
             <option value="0.125">ย้อนหลัง 3 ชั่วโมง</option>
             <option value="1">ย้อนหลัง 1 วัน</option>
@@ -81,7 +131,7 @@
         <div class="card">
             <div class="card-title">💧 ระดับน้ำปัจจุบัน (m)</div>
             <div class="current-num"><span id="val-display">0.000</span> <span class="unit">m</span></div>
-            <p id="time-display" class="time-label">กำลังโหลด...</p>
+            <p id="time-display" class="time-label">รอข้อมูลจากระบบ...</p>
             <div class="wave-wrapper">
                 <svg class="waves water-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
                     <defs><path id="w-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
@@ -93,7 +143,7 @@
         <div class="card">
             <div class="card-title">🔋 แบตเตอรี่ปัจจุบัน (V)</div>
             <div class="current-num bat-num"><span id="bat-display">0.00</span> <span class="unit">V</span></div>
-            <p id="bat-time-display" class="time-label">กำลังโหลด...</p>
+            <p id="bat-time-display" class="time-label">รอข้อมูลจากระบบ...</p>
             <div class="wave-wrapper">
                 <svg class="waves bat-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
                     <defs><path id="b-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" /></defs>
@@ -151,6 +201,28 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // --- Theme Manager ---
+    const toggleSwitch = document.querySelector('#checkbox');
+    const currentTheme = localStorage.getItem('theme');
+
+    if (currentTheme) {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'dark') toggleSwitch.checked = true;
+    }
+
+    function switchTheme(e) {
+        if (e.target.checked) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+        }
+        updateChartTheme(); // อัปเดตสีตัวอักษรในกราฟด้วย
+    }
+    toggleSwitch.addEventListener('change', switchTheme);
+
+    // --- Chart Logic ---
     const ROWS_PER_PAGE = 10;
     let waterData = [], batData = [];
     let waterPage = 1, batPage = 1;
@@ -163,14 +235,23 @@
             options: { 
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                    x: { 
-                        type: 'time', 
-                        time: { unit: 'minute', displayFormats: { minute: 'HH:mm', hour: 'HH:mm' } }
-                    } 
-                }
+                    x: { type: 'time', time: { unit: 'minute', displayFormats: { minute: 'HH:mm' } }, grid: { color: 'rgba(150,150,150,0.1)' } },
+                    y: { grid: { color: 'rgba(150,150,150,0.1)' } }
+                },
+                plugins: { legend: { labels: { color: '#888' } } }
             }
         });
     }
+
+    function updateChartTheme() {
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim();
+        [waterChart, batteryChart].forEach(chart => {
+            chart.options.scales.x.ticks.color = textColor;
+            chart.options.scales.y.ticks.color = textColor;
+            chart.update();
+        });
+    }
+
     const waterChart = createChart('waterChart', 'ระดับน้ำ (m)', '#0056b3');
     const batteryChart = createChart('batteryChart', 'แบตเตอรี่ (V)', '#ffa502');
 
@@ -179,7 +260,6 @@
         const now = Date.now();
         const startTime = now - (days * 24 * 60 * 60 * 1000);
         
-        // ปรับสเกลแกน X ตามช่วงเวลาที่เลือก
         const unit = days <= 0.125 ? 'minute' : (days <= 3 ? 'hour' : 'day');
         
         [waterChart, batteryChart].forEach(chart => {
@@ -244,6 +324,7 @@
     }
 
     loadAllData();
+    updateChartTheme();
     setInterval(checkStatus, 30000);
 </script>
 </body>
