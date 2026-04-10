@@ -119,25 +119,25 @@
 
     <div class="grid-layout">
         <div class="card">
-            <div class="card-title">💧 ระดับน้ำปัจจุบัน (m)</div>
+            <div class="card-title">💧 ระดับน้ำล่าสุด (m)</div>
             <div class="current-num"><span id="val-display">0.000</span> <span class="unit">m</span></div>
             <p id="time-display" class="time-label">-</p>
             <div class="wave-wrapper"><svg class="waves water-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="w" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#w" x="48" y="0"/><use href="#w" x="48" y="5"/></g></svg></div>
         </div>
         <div class="card">
-            <div class="card-title">🔋 แบตเตอรี่ปัจจุบัน (V)</div>
+            <div class="card-title">🔋 แบตเตอรี่ล่าสุด (V)</div>
             <div class="current-num" style="color:var(--warning)"><span id="bat-display">0.00</span> <span class="unit">V</span></div>
             <p id="bat-time-display" class="time-label">-</p>
             <div class="wave-wrapper"><svg class="waves bat-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="b" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#b" x="48" y="0"/><use href="#b" x="48" y="5"/></g></svg></div>
         </div>
         <div class="card">
-            <div class="card-title">🌡️ อุณหภูมิในตู้ (°C)</div>
+            <div class="card-title">🌡️ อุณหภูมิในตู้ล่าสุด (°C)</div>
             <div class="current-num" style="color:var(--temp1)"><span id="temp1-display">0.0</span> <span class="unit">°C</span></div>
             <p id="temp1-time-display" class="time-label">-</p>
             <div class="wave-wrapper"><svg class="waves temp1-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="t1" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#t1" x="48" y="0"/><use href="#t1" x="48" y="5"/></g></svg></div>
         </div>
         <div class="card">
-            <div class="card-title">🌡️ อุณหภูมิเซ็นเซอร์ (°C)</div>
+            <div class="card-title">🌡️ อุณหภูมิเซ็นเซอร์ล่าสุด (°C)</div>
             <div class="current-num" style="color:var(--temp2)"><span id="temp2-display">0.0</span> <span class="unit">°C</span></div>
             <p id="temp2-time-display" class="time-label">-</p>
             <div class="wave-wrapper"><svg class="waves temp2-wave" viewBox="0 24 150 28" preserveAspectRatio="none"><defs><path id="t2" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/></defs><g class="parallax"><use href="#t2" x="48" y="0"/><use href="#t2" x="48" y="5"/></g></svg></div>
@@ -202,7 +202,6 @@
     let pages = { water: 1, bat: 1, temp1: 1, temp2: 1 };
     const ROWS = 10;
 
-    // --- กราฟแบบที่สวยงาม (Tension 0.4 และซ่อนจุดเมื่อข้อมูลเยอะ) ---
     function createChart(id, label, color) {
         return new Chart(document.getElementById(id).getContext('2d'), {
             type: 'line',
@@ -215,8 +214,7 @@
                 scales: { 
                     x: { type: 'time', time: { unit: 'minute' }, grid: { color: 'rgba(150,150,150,0.05)' }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                     y: { grid: { color: 'rgba(150,150,150,0.05)' } }
-                },
-                plugins: { tooltip: { enabled: true } }
+                }
             }
         });
     }
@@ -250,11 +248,11 @@
             end = now;
         }
 
-        let unit = (end - start) / 3600000 > 12 ? 'hour' : 'minute';
         [chartWater, chartBat, chartTemp1, chartTemp2].forEach(c => {
-            c.options.scales.x.min = start; c.options.scales.x.max = end; c.options.scales.x.time.unit = unit;
+            c.options.scales.x.min = start; c.options.scales.x.max = end;
         });
 
+        // ดึงข้อมูล 4 ชุด
         sync('water_levels', 'val', 3, 'val-display', 'time-display', chartWater, 1000, 'water', start, end);
         sync('battery_levels', 'val', 2, 'bat-display', 'bat-time-display', chartBat, 1, 'bat', start, end);
         sync('TEMP_EG8200', 'temp', 1, 'temp1-display', 'temp1-time-display', chartTemp1, 1, 'temp1', start, end);
@@ -262,30 +260,45 @@
     }
 
     function sync(path, key, fixed, vId, tId, chart, div, type, start, end) {
-        database.ref(path).orderByChild('timestamp').startAt(start).endAt(end).on('value', snap => {
-            const raw = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
-            if(raw.length > 0) {
-                const latest = raw[0];
-                document.getElementById(vId).innerText = ((latest[key]||0)/div).toFixed(fixed);
-                document.getElementById(tId).innerText = "ล่าสุด: " + latest.fullTime;
+        // --- 1. ส่วนดึงข้อมูลทั้งหมด (Unfiltered) สำหรับค่าล่าสุดและตาราง ---
+        database.ref(path).orderByChild('timestamp').on('value', snap => {
+            const rawAll = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+            
+            if(rawAll.length > 0) {
+                // อัปเดตค่าล่าสุด: ใช้ตัวแรกสุดของฐานข้อมูลเสมอ (Last Entry)
+                const realLatest = rawAll[0];
+                document.getElementById(vId).innerText = ((realLatest[key]||0)/div).toFixed(fixed);
+                document.getElementById(tId).innerText = "อัปเดต: " + realLatest.fullTime;
 
-                // --- LOGIC กรองข้อมูล 5 นาที (แบบที่สมูทสวยงาม) ---
-                let filtered = [];
-                if ((end - start) >= 10800000) { // 3 ชั่วโมงขึ้นไป
-                    let lastTs = 0;
-                    const reversed = [...raw].sort((a,b)=>a.timestamp-b.timestamp);
-                    reversed.forEach(item => { if (item.timestamp - lastTs >= 300000) { filtered.push({x: item.timestamp, y: (item[key]||0)/div}); lastTs = item.timestamp; }});
-                    filtered.push({x: latest.timestamp, y: (latest[key]||0)/div});
-                } else {
-                    filtered = [...raw].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x:i.timestamp, y:(i[key]||0)/div}));
-                }
-
-                chart.data.datasets[0].data = filtered;
-                chart.data.datasets[0].pointRadius = (end - start) > 3600000 ? 0 : 3; // ซ่อนจุดถ้าดูเกิน 1 ชม.
-                chart.update('none');
-                allData[type] = raw.map(i => ({time: i.fullTime.split(' ')[1], val: ((i[key]||0)/div).toFixed(fixed)}));
+                // ตารางประวัติ: ใช้ข้อมูลทั้งหมดที่มีในฐานข้อมูล (Unfiltered)
+                allData[type] = rawAll.map(i => ({time: i.fullTime.split(' ')[1], val: ((i[key]||0)/div).toFixed(fixed)}));
                 renderTable(type);
-                if(type === 'water') checkStatus(latest.timestamp);
+                
+                // เช็ค Online Status จากข้อมูลระดับน้ำล่าสุด
+                if(type === 'water') checkStatus(realLatest.timestamp);
+            }
+        });
+
+        // --- 2. ส่วนดึงข้อมูลสำหรับกราฟ (Filtered ตามช่วงเวลาที่เลือก) ---
+        database.ref(path).orderByChild('timestamp').startAt(start).endAt(end).on('value', snap => {
+            const rawChart = snap.val() ? Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp) : [];
+            if(rawChart.length > 0) {
+                let filtered = [];
+                const latestInPeriod = rawChart[0];
+                if ((end - start) >= 10800000) {
+                    let lastTs = 0;
+                    const reversed = [...rawChart].sort((a,b)=>a.timestamp-b.timestamp);
+                    reversed.forEach(item => { if (item.timestamp - lastTs >= 300000) { filtered.push({x: item.timestamp, y: (item[key]||0)/div}); lastTs = item.timestamp; }});
+                    filtered.push({x: latestInPeriod.timestamp, y: (latestInPeriod[key]||0)/div});
+                } else {
+                    filtered = [...rawChart].sort((a,b)=>a.timestamp-b.timestamp).map(i => ({x:i.timestamp, y:(i[key]||0)/div}));
+                }
+                chart.data.datasets[0].data = filtered;
+                chart.data.datasets[0].pointRadius = (end - start) > 3600000 ? 0 : 3;
+                chart.update('none');
+            } else {
+                chart.data.datasets[0].data = [];
+                chart.update();
             }
         });
     }
